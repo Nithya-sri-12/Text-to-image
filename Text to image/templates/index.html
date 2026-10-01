@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Image Generator</title>
+<style>
+body {
+  background: #0a0a0f;
+  color: white;
+  font-family: Arial;
+  text-align: center;
+  padding: 30px;
+}
+
+textarea {
+  width: 60%;
+  padding: 10px;
+}
+
+button {
+  padding: 10px 20px;
+  margin-left: 10px;
+  cursor: pointer;
+}
+
+#gallery {
+  margin-top: 30px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 250px);
+  gap: 20px;
+  justify-content: center;
+}
+
+.img-card {
+  background: #1c1c28;
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.img-card img {
+  width: 100%;
+  border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>AI Image Generator</h1>
+
+<textarea id="prompt" placeholder="Enter prompt..."></textarea>
+<br><br>
+
+<select id="count">
+  <option value="1">1</option>
+  <option value="2" selected>2</option>
+  <option value="3">3</option>
+</select>
+
+<select id="style">
+  {% for key in styles %}
+  <option value="{{key}}">{{key}}</option>
+  {% endfor %}
+</select>
+
+<select id="size">
+  {% for s in sizes %}
+  <option value="{{s}}">{{s}}</option>
+  {% endfor %}
+</select>
+
+<br><br>
+<button onclick="generate()">Generate</button>
+
+<h3 id="status"></h3>
+
+<div id="gallery"></div>
+
+<script>
+async function generate() {
+  const prompt = document.getElementById("prompt").value.trim();
+  const count = document.getElementById("count").value;
+  const style = document.getElementById("style").value;
+  const size = document.getElementById("size").value;
+
+  if (!prompt) {
+    alert("Enter prompt");
+    return;
+  }
+
+  document.getElementById("status").innerText = "Generating...";
+
+  const res = await fetch("/generate", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({prompt, count, style, size})
+  });
+
+  const data = await res.json();
+
+  const gallery = document.getElementById("gallery");
+  gallery.innerHTML = "";
+
+  data.images.forEach(imgData => {
+    const card = document.createElement("div");
+    card.className = "img-card";
+
+    const img = document.createElement("img");
+    img.src = imgData.url;
+    img.loading = "lazy";
+
+    img.onerror = () => {
+      console.log("Image failed:", imgData.url);
+    };
+
+    const btn = document.createElement("a");
+    btn.href = "/download?url=" + encodeURIComponent(imgData.url);
+    btn.innerText = "Download";
+    btn.style.display = "block";
+
+    card.appendChild(img);
+    card.appendChild(btn);
+
+    gallery.appendChild(card);
+  });
+
+  document.getElementById("status").innerText = "Done!";
+}
+</script>
+
+</body>
+</html>
